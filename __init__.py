@@ -16,10 +16,10 @@
 # ##### END GPL LICENSE BLOCK #####
 
 bl_info = {
-"name": "Tesselate texture plane",
-"description": "Triangulate mesh on opaque area of selected texture",
+"name": "Tesselate image texture",
+"description": "Triangulate mesh on opaque area of selected image",
 "author": "Henri Hebeisen, Samuel Bernou, Damien Picard",
-"version": (3, 0, 0),
+"version": (0, 0, 1),
 "blender": (4, 0, 1),
 "location": "3D view > right toolbar > Tesselate tex plane",
 "warning": "Full rewrite of previous version",
@@ -51,7 +51,8 @@ from bpy.types import (Operator,
                        )
 
 from bpy.utils import (register_class,
-                       unregister_class)
+                       unregister_class,
+                       resource_path)
 
 from bpy_extras.io_utils import ImportHelper
 from bpy_extras.image_utils import load_image
@@ -70,11 +71,38 @@ class TESS_OT_tesselate_texture(Operator, ImportHelper):
         print(self.filepath)
 
         image = load_image(self.filepath)
+        print(image.size[0])
+        print(image.name)
+
+        # add a plane
+        mesh = bpy.data.meshes.new("Plane")
+        plane = bpy.data.objects.new(image.name, mesh)
+
+        context.collection.objects.link(plane)
+
+        # load the geo node 
+        try: 
+            tesselate_group = bpy.data.node_groups['TESSELATE_IMAGE_TEXTURE']
+        except:
+            USER = Path(resource_path('USER'))
+            ADDON = "Tesselate_texture_plane"
+            srcPath = USER / "scripts/addons" / ADDON / "blend" / 'nodes.blend'
+            library = str(srcPath)
+            with bpy.data.libraries.load(str(library)) as (data_from, data_to):
+                data_to.node_groups = [ name for name in data_from.node_groups if name == 'TESSELATE_IMAGE_TEXTURE']
+
+            tesselate_group = bpy.data.node_groups['TESSELATE_IMAGE_TEXTURE']
+
+        #apply the geo node to plane
+        modifier = plane.modifiers.new("Tesselator", "NODES")
+        modifier.node_group = tesselate_group
+        
+
         return {"FINISHED"}
 
 
 class TESS_PT_tesselate_UI(Panel):
-    bl_label = "Tex plane tesselation"
+    bl_label = "Tesselate Image"
     bl_space_type = "VIEW_3D"
     bl_region_type = "UI"
     bl_category = "Tool"
@@ -84,8 +112,6 @@ class TESS_PT_tesselate_UI(Panel):
     def draw(self, context):
         layout = self.layout
        
-        row = layout.row()
-        row.label(text='Prout')
         row = layout.row(align=True)
         row.scale_y = 2
         row.operator('mesh.tesselate_texture', icon='IMAGE_REFERENCE')
