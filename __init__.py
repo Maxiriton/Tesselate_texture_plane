@@ -96,7 +96,12 @@ class TESS_OT_tesselate_texture(Operator, ImportHelper):
         #apply the geo node to plane
         modifier = plane.modifiers.new("Tesselator", "NODES")
         modifier.node_group = tesselate_group
-        
+
+
+        modifier["Socket_3"] = image
+        modifier["Socket_4"] = 200.0
+        modifier["Socket_5"] = image.size[0]
+        modifier["Socket_6"] = image.size[1]
 
         return {"FINISHED"}
 
