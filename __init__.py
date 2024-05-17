@@ -17,12 +17,12 @@
 
 bl_info = {
 "name": "Tesselate image texture",
-"description": "Triangulate mesh on opaque area of selected image",
-"author": "Henri Hebeisen, Samuel Bernou, Damien Picard",
+"description": "Generate a mesh based on the alpha of an image",
+"author": "Henri Hebeisen",
 "version": (0, 0, 1),
-"blender": (4, 0, 1),
-"location": "3D view > right toolbar > Tesselate tex plane",
-"warning": "Full rewrite of previous version",
+"blender": (4, 1, 0),
+"location": "3D view > Right Toolbar > Tool > Tesselate Image",
+"warning": "Experimental version",
 "wiki_url": "https://github.com/Maxiriton/Tesselate_texture_plane",
 "tracker_url": "https://github.com/Maxiriton/Tesselate_texture_plane/issues",
 "category": "3D View"
@@ -30,25 +30,7 @@ bl_info = {
 
 import bpy
 from pathlib import Path
-from bpy.props import (IntProperty,
-                        StringProperty,
-                        BoolProperty,
-                        FloatProperty,
-                        EnumProperty,
-                        CollectionProperty,
-                        PointerProperty,
-                        IntVectorProperty,
-                        BoolVectorProperty,
-                        FloatVectorProperty,
-                        RemoveProperty,
-                        )
-
-from bpy.types import (Operator,
-                       Panel,
-                       PropertyGroup,
-                       UIList,
-                       AddonPreferences,
-                       )
+from bpy.types import Operator, Panel
 
 from bpy.utils import (register_class,
                        unregister_class,
@@ -71,14 +53,29 @@ class TESS_OT_tesselate_texture(Operator, ImportHelper):
         print(self.filepath)
 
         image = load_image(self.filepath)
-        print(image.size[0])
-        print(image.name)
+
 
         # add a plane
         mesh = bpy.data.meshes.new("Plane")
         plane = bpy.data.objects.new(image.name, mesh)
 
         context.collection.objects.link(plane)
+
+        #create the material
+        mat = bpy.data.materials.new(image.name)
+        mat.use_nodes = True
+        tree = mat.node_tree
+
+        img_tex_node = tree.nodes.new("ShaderNodeTexImage")
+        img_tex_node.image = image
+
+        attribute_node = tree.nodes.new("ShaderNodeAttribute")
+        attribute_node.attribute_name = 'UVs'
+
+        principled_bsdf = tree.nodes['Principled BSDF']
+
+        tree.links.new(attribute_node.outputs[0], img_tex_node.inputs[0])
+        tree.links.new(img_tex_node.outputs[0], principled_bsdf.inputs[0])
 
         # load the geo node 
         try: 
@@ -97,11 +94,14 @@ class TESS_OT_tesselate_texture(Operator, ImportHelper):
         modifier = plane.modifiers.new("Tesselator", "NODES")
         modifier.node_group = tesselate_group
 
-
-        modifier["Socket_3"] = image
-        modifier["Socket_4"] = 200.0
-        modifier["Socket_5"] = image.size[0]
-        modifier["Socket_6"] = image.size[1]
+        modifier["Socket_2"] = 3                #Precision
+        modifier["Socket_3"] = image            #image reference
+        modifier["Socket_4"] = 200.0            #mesh density
+        modifier["Socket_5"] = image.size[0]    #resolution X
+        modifier["Socket_6"] = image.size[1]    #resolution Y
+        modifier["Socket_9"] = 4                #post simplificaton
+        modifier["Socket_10"] = 3               #channel used, index of enum,  3 is for Alpha
+        modifier["Socket_11"] = mat             #material
 
         return {"FINISHED"}
 
