@@ -84,7 +84,7 @@ class TESS_OT_tesselate_texture(Operator, ImportHelper):
             USER = Path(resource_path('USER'))
             ADDON = "Tesselate_texture_plane"
             srcPath = USER / "scripts/addons" / ADDON / "blend" / 'nodes.blend'
-            library = str(srcPath)
+            library  = Path(srcPath)
             with bpy.data.libraries.load(str(library)) as (data_from, data_to):
                 data_to.node_groups = [ name for name in data_from.node_groups if name == 'TESSELATE_IMAGE_TEXTURE']
 
@@ -96,7 +96,7 @@ class TESS_OT_tesselate_texture(Operator, ImportHelper):
 
         modifier["Socket_2"] = 3                #Precision
         modifier["Socket_3"] = image            #image reference
-        modifier["Socket_4"] = 200.0            #mesh density
+        modifier["Socket_4"] = 20.0             #mesh density
         modifier["Socket_5"] = image.size[0]    #resolution X
         modifier["Socket_6"] = image.size[1]    #resolution Y
         modifier["Socket_9"] = 4                #post simplificaton
