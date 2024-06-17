@@ -29,6 +29,7 @@ bl_info = {
 }
 
 import bpy
+import addon_utils
 from pathlib import Path
 from bpy.types import Operator, Panel
 
@@ -81,10 +82,17 @@ class TESS_OT_tesselate_texture(Operator, ImportHelper):
         try: 
             tesselate_group = bpy.data.node_groups['TESSELATE_IMAGE_TEXTURE']
         except:
-            USER = Path(resource_path('USER'))
-            ADDON = "Tesselate_texture_plane"
-            srcPath = USER / "scripts/addons" / ADDON / "blend" / 'nodes.blend'
-            library  = Path(srcPath)
+            filepath = None
+            for mod in addon_utils.modules():
+                if mod.bl_info['name'] == "Tesselate image texture":
+                    filepath = mod.__file__
+                    break
+
+            if not filepath: 
+                return {"CANCELLED"}
+            
+            filepath = Path(filepath)
+            library  = Path(filepath.parent.absolute(), "blend", "nodes.blend")
             with bpy.data.libraries.load(str(library)) as (data_from, data_to):
                 data_to.node_groups = [ name for name in data_from.node_groups if name == 'TESSELATE_IMAGE_TEXTURE']
 
