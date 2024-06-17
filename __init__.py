@@ -19,7 +19,7 @@ bl_info = {
 "name": "Tesselate image texture",
 "description": "Generate a mesh based on the alpha of an image",
 "author": "Henri Hebeisen",
-"version": (0, 0, 1),
+"version": (0, 1, 1),
 "blender": (4, 1, 0),
 "location": "3D view > Right Toolbar > Tool > Tesselate Image",
 "warning": "Experimental version",
